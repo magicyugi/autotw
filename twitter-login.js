@@ -179,6 +179,9 @@ const task = async(results) => {
             await tweetToLike[randomIndex].click();
             account.like--;
             console.log('已点赞推文  剩余:'+account.like);
+            connection.query('update account set `like` = '+account.like+' where name="'+account.name+'"', function(error, results, fields){
+              
+            });
           }
         }
         let errorMessage = `[${new Date().toISOString()}] 点赞任务 --- 用户:${account.name} \n 剩下:${account.like}\n`;
@@ -305,6 +308,11 @@ const task = async(results) => {
         await page.click('div[data-testid="tweetButton"]');
 
         let errorMessage = `[${new Date().toISOString()}] 回复任务 --- 用户:${account.name} \n 内容:${commenterAll}\n`;
+
+
+        connection.query('update account set `keyword` = "",twitterAddress = ""  where name="'+account.name+'"', function(error, results, fields){
+              
+        });
 
         // 将错误信息写入文件
         fs.appendFileSync(filePath, errorMessage, 'utf8');
