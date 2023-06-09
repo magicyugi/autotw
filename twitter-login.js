@@ -33,7 +33,7 @@ connection.connect();
 
 (async () => {
   try {
-    connection.query("select * from  account where first=0 and (`like` <>0 or keyword<>'' or followkeyword <>'') AND  followkeyword <>''", function(error, results, fields){
+    connection.query("select * from  account where first=0 and (`like` <>0 or keyword<>'' or followkeyword <>'') ", function(error, results, fields){
       
       // const tweetText = await firstTweet.$eval('div[lang] ', el => el.textContent);
       // console.log(`Sticky tweet text: ${tweetText}`);
