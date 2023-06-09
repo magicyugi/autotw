@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { format } = require('date-fns');
 const mysql = require('mysql');
+const { Console } = require('console');
 
 // 获取当前日期
 const currentDate = format(new Date(), 'yyyy-MM-dd');
@@ -32,7 +33,7 @@ connection.connect();
 
 (async () => {
   try {
-    connection.query("select * from  account where first=0 and (`like` <>0 or keyword<>'' or followkeyword <>'')", function(error, results, fields){
+    connection.query("select * from  account where first=0 and (`like` <>0 or keyword<>'' or followkeyword <>'') AND  followkeyword <>''", function(error, results, fields){
       
       // const tweetText = await firstTweet.$eval('div[lang] ', el => el.textContent);
       // console.log(`Sticky tweet text: ${tweetText}`);
@@ -68,7 +69,7 @@ const task = async(results) => {
     account.like = 0;
     account.tag = "";
     account.keyword = "";
-    account.followkeyword = "#loyal #erc20 #loyaleth";
+    // account.followkeyword = "%23loyal %23erc20 %23loyaleth";
     account.twitterAddress = "https://twitter.com/3orovik/status/1658612393100861440";
     
     const browser = await puppeteer.launch({ headless: false,
@@ -329,7 +330,84 @@ const task = async(results) => {
         
       }
     }
+
+    if(account.followkeyword){
+
+      await page.goto(`https://twitter.com/search?q=${account.followkeyword}&src=typed_query&f=live`);
+
+      // 等待一段时间，确保页面有足够的时间进行滚动
+      await page.waitForTimeout(2000);
+
+      let previousHeight = await page.evaluate(() => {
+        return document.documentElement.scrollHeight;
+      });
     
-    await browser.close();
+      let currentHeight = 0;
+
+      let folloUser = [];
+    
+      while (previousHeight !== currentHeight) {
+        await page.evaluate(() => {
+          window.scrollTo(0, document.documentElement.scrollHeight);
+        });
+    
+        await page.waitForTimeout(2000);
+    
+        previousHeight = currentHeight;
+        currentHeight = await page.evaluate(() => {
+          return document.documentElement.scrollHeight;
+        });
+
+        const userList = await page.$$('div[class="css-1dbjc4n r-18u37iz r-1wbh5a2 r-13hce6t"] a[class="css-4rbku5 css-18t94o4 css-1dbjc4n r-1loqt21 r-1wbh5a2 r-dnmrzs r-1ny4l3l"]');
+        console.log("userList---",userList.length);
+
+        if(userList.length>0){
+
+          for (let i = 0; i < userList.length ; i++) {
+
+            await userList[i].click();
+
+            await page.waitForTimeout(2000);
+            
+            const commenterName = await page.$eval('div[data-testid="UserName"] div[class="css-1dbjc4n r-1awozwy r-18u37iz r-1wbh5a2"] span', el => el.textContent);
+
+            // console.log("commenterName---",commenterName);
+            if(!folloUser.includes(commenterName)){
+
+              // // 检查是否已关注用户
+              // const isFollowing = await page.evaluate(() => {
+              //   return document.querySelector('.follow-button').textContent === 'Following';
+              // });
+
+              const folloStr = await page.$eval('div[data-testid="placementTracking"] div[class="css-1dbjc4n r-6gpygo"] span', el => el.textContent);
+
+              console.log("commenterName---followStr",commenterName,folloStr);
+              
+              if (folloStr=='Follow') {
+                // const followButton = await page.$eval('div[data-testid="placementTracking"] div[role="button"]');
+
+                // await followButton.click();
+
+                await page.evaluate(() => {
+                  const followButton = document.querySelector('div[data-testid="placementTracking"] div[role="button"]');
+                  if (followButton) {
+                    followButton.click();
+                  }
+                });
+              } else {
+                console.log('已关注用户');
+              }
+              
+              folloUser.push(folloUser)
+
+
+              // 返回上一页
+              await page.goBack();
+            }
+          }
+        }
+      }
+    }
+    // await browser.close();
   }
 }
