@@ -68,7 +68,7 @@ const task = async(results) => {
     account.like = 0;
     account.tag = "";
     account.keyword = "";
-    account.followtag = "#loyal #erc20 #loyaleth";
+    account.followkeyword = "#loyal #erc20 #loyaleth";
     account.twitterAddress = "https://twitter.com/3orovik/status/1658612393100861440";
     
     const browser = await puppeteer.launch({ headless: false,
