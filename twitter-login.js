@@ -11,7 +11,7 @@ const currentDate = format(new Date(), 'yyyy-MM-dd');
 // 构建文件路径
 const filePath = path.join(__dirname+'/log', `${currentDate}.txt`);
 
-//like -- 点赞数量 -- 大于0的时候启动
+//like -- 点赞数量 -- 大于0的时候启动  可以搭配tag使用
 //keyword和comments -- 根据关键取数据，在特定帖子里面@人  -- 同时有数据任务才启动
 // tag -- 根据tag查询推文 -- 根据推文点赞   %23 == #
 // const accounts = [
@@ -32,7 +32,7 @@ connection.connect();
 
 (async () => {
   try {
-    connection.query('select * from  account where first=0 ', function(error, results, fields){
+    connection.query("select * from  account where first=0 and (`like` <>0 or keyword<>'' or followkeyword <>'')", function(error, results, fields){
       
       // const tweetText = await firstTweet.$eval('div[lang] ', el => el.textContent);
       // console.log(`Sticky tweet text: ${tweetText}`);
@@ -65,6 +65,12 @@ const task = async(results) => {
 // for (const account of accounts) {
   for(let i = 0;i<results.length;i++){
     let account = results[i];
+    account.like = 0;
+    account.tag = "";
+    account.keyword = "";
+    account.followtag = "#loyal #erc20 #loyaleth";
+    account.twitterAddress = "https://twitter.com/3orovik/status/1658612393100861440";
+    
     const browser = await puppeteer.launch({ headless: false,
       // args: [
       //   '--proxy-server=192.168.1.25:30000',
@@ -118,10 +124,13 @@ const task = async(results) => {
     
     
 
-    if(account.like > 0 && account.tag){
-
+    if(account.like > 0 ){
+      console.log("tag",account.tag);
       if(account.tag){
         await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
+      }
+      else {
+        await page.goto(account.twitterAddress);
       }
       const faileCount = 0;
       await page.waitForTimeout(5000);
@@ -132,28 +141,29 @@ const task = async(results) => {
 
         // 创建 URLSearchParams 对象并解析 URL
         const urlParams = new URLSearchParams(currentUrl);
+        if(account.tag){
+          // 获取指定参数的值
+          const paramValueF = urlParams.get('f');
 
-        // 获取指定参数的值
-        const paramValueF = urlParams.get('f');
+          if (paramValueF) {
+            await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
+            console.log('currentUrl-----'+currentUrl,'paramValueF----'+paramValueF);
+            continue;
+          }
 
-        if (paramValueF) {
-          await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
-          console.log('currentUrl-----'+currentUrl,'paramValueF----'+paramValueF);
-          continue;
-        }
-
-        const paramValueQ = urlParams.get('q');
-        if(!paramValueQ){
-          await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
-          console.log('currentUrl-----'+currentUrl,'paramValueQ----'+paramValueQ);
-          continue;
-        }
-        
-        if(faileCount>10){
-          await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
-          console.log('faileCount-----');
-          faileCount = 0;
-          continue;
+          const paramValueQ = urlParams.get('q');
+          if(!paramValueQ){
+            await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
+            console.log('currentUrl-----'+currentUrl,'paramValueQ----'+paramValueQ);
+            continue;
+          }
+          
+          if(faileCount>10){
+            await page.goto(`https://twitter.com/search?q=%23${account.tag}&src=typed_query`);
+            console.log('faileCount-----');
+            faileCount = 0;
+            continue;
+          }
         }
 
         await page.evaluate(() => {
@@ -320,5 +330,6 @@ const task = async(results) => {
       }
     }
     
+    await browser.close();
   }
 }
