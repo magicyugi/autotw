@@ -5,12 +5,17 @@ const path = require('path');
 const { format } = require('date-fns');
 const mysql = require('mysql');
 const { Console } = require('console');
+const axios = require('axios');
 
 // 获取当前日期
 const currentDate = format(new Date(), 'yyyy-MM-dd');
 
 // 构建文件路径
 const filePath = path.join(__dirname+'/log', `${currentDate}.txt`);
+// 代理类别
+const proxyType = "proxy-store";//
+const proxyKey = "019241a185dcd30a33327077b14a3415";//
+
 
 //like -- 点赞数量 -- 大于0的时候启动  可以搭配tag使用
 //keyword和comments -- 根据关键取数据，在特定帖子里面@人  -- 同时有数据任务才启动
@@ -33,7 +38,7 @@ connection.connect();
 
 (async () => {
   try {
-    connection.query("select * from  account where first=0 and (`like` <>0 or keyword<>'' or followkeyword <>'') ", function(error, results, fields){
+    connection.query("select * from  account where first=0 and (`like` >0 or keyword<>'' or followkeyword <>'') ", function(error, results, fields){
       
       // const tweetText = await firstTweet.$eval('div[lang] ', el => el.textContent);
       // console.log(`Sticky tweet text: ${tweetText}`);
@@ -71,21 +76,40 @@ const task = async(results) => {
     account.keyword = "";
     // account.followkeyword = "%23loyal %23erc20 %23loyaleth";
     account.twitterAddress = "https://twitter.com/3orovik/status/1658612393100861440";
-    
-    const browser = await puppeteer.launch({ headless: false,
+
+
+
+    const launchOptions = {headless: false,
       // args: [
       //   '--proxy-server=192.168.1.25:30000',
       // ] ,
       userDataDir: '/path/to/user/data/dir/'+account.name,
-    });
-    const page = await browser.newPage();
+    };
+    
+    
 
+    // // if(account.proxy){
+    //   // 发送 HTTP 请求到 Rola API 获取代理地址
+    //   const response = await axios.get(`https://proxy-store.com/api/${proxyKey}/getproxy`);
+    
+    //   const proxy = response.data; // 获取代理地址
+    //   if(proxy){
+      
+    //   }
+    //   console.log('proxy----',response.data);
+    
+      launchOptions.args = [`--proxy-server=91.212.49.151:30001`];
+    // }
+    console.log('launchOptions----',launchOptions);
+    const browser = await puppeteer.launch(launchOptions);
+    const page = await browser.newPage();
+    await page.authenticate({ username: 'tik2012120311_protonmail', password: 'fbe34d2406' });
 
     // add condition to check if user name has been requested
     // review repos
     //create a new branch for the new changes
-
-    await page.goto("https://twitter.com/home");
+    // fbe34d2406
+    await page.goto("https://www.whoer.net/");
     await page.waitForTimeout(10000);
 
     console.log('Login account name1',account.name);
@@ -407,7 +431,10 @@ const task = async(results) => {
           }
         }
       }
+      connection.query('update account set `followkeyword` = ""  where name="'+account.name+'"', function(error, results, fields){
+              
+      });
     }
-    // await browser.close();
+    await browser.close();
   }
 }
