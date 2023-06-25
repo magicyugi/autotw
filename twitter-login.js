@@ -98,18 +98,19 @@ const task = async(results) => {
     //   }
     //   console.log('proxy----',response.data);
     
-      launchOptions.args = [`--proxy-server=91.212.49.151:30001`];
+      // launchOptions.args = ['--proxy-server=51.178.18.88:80'];
     // }
     console.log('launchOptions----',launchOptions);
     const browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
-    await page.authenticate({ username: 'tik2012120311_protonmail', password: 'fbe34d2406' });
+    // await page.authenticate({ username: 'tik2012120311_protonmail', password: 'fbe34d2406' });
 
     // add condition to check if user name has been requested
     // review repos
     //create a new branch for the new changes
     // fbe34d2406
-    await page.goto("https://www.whoer.net/");
+    // await page.goto("https://www.whoer.net/");
+    await page.goto("https://twitter.com/home", { waitUntil: 'networkidle2' });
     await page.waitForTimeout(10000);
 
     console.log('Login account name1',account.name);
