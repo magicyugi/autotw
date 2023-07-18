@@ -45,8 +45,10 @@ connection.connect();
 
       // 关闭浏览器
       // await browser.close();
-
-      task(results);
+      for(let i = 0;i<results.length;i++){
+        let account = results[i];
+        task(account);
+      }
     });
 
   } catch (error) {
@@ -67,15 +69,13 @@ connection.connect();
 })();
 
 
-const task = async(results) => {
+const task = async(account) => {
 // for (const account of accounts) {
-  for(let i = 0;i<results.length;i++){
-    let account = results[i];
-    account.like = 0;
-    account.tag = "";
-    account.keyword = "";
+  // for(let i = 0;i<results.length;i++){
+    // let account = results[i];
+    // account.like = 0;
     // account.followkeyword = "%23loyal %23erc20 %23loyaleth";
-    account.twitterAddress = "https://twitter.com/3orovik/status/1658612393100861440";
+    // account.twitterAddress = "https://twitter.com/3orovik/status/1658612393100861440";
 
 
 
@@ -98,7 +98,7 @@ const task = async(results) => {
     //   }
     //   console.log('proxy----',response.data);
     
-      // launchOptions.args = ['--proxy-server=51.178.18.88:80'];
+      // launchOptions.args = ['--proxy-server=43.130.10.70:20439'];
     // }
     console.log('launchOptions----',launchOptions);
     const browser = await puppeteer.launch(launchOptions);
@@ -119,7 +119,7 @@ const task = async(results) => {
 
     // console.log('loginButton',loginButton);
     if (loginButton) {
-      console.log('Login account name2',account.name);
+      console.log('Login account name2',account.name, account.password);
       // await page.goto("https://twitter.com/i/flow/login");
       
       await page.type('input[autocomplete="username"]', account.name, { delay: 100 });
@@ -436,6 +436,122 @@ const task = async(results) => {
               
       });
     }
-    await browser.close();
+  //   await browser.close();
+  // }
+
+
+  let currentHeightX = 0;
+
+  // await page.goto(`https://twitter.com/explore`);
+
+  
+
+  let previousHeightX = 0;
+  // await page.evaluate(() => {
+  //   return document.documentElement.scrollHeight;
+  // });
+
+  while (true) {
+    let randomTime= Math.floor(4000+Math.random()*2000);
+    if(previousHeightX !== currentHeightX){
+      await page.evaluate(() => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+      });
+  
+      await page.waitForTimeout(randomTime);
+  
+      previousHeightX = currentHeightX;
+      currentHeightX = await page.evaluate(() => {
+        return document.documentElement.scrollHeight;
+      });
+    }else{
+      let type = Math.floor( Math.random()*5);
+
+      if(type==0){
+        await page.goto(`https://twitter.com/explore`);
+      }else if(type==1){
+        await page.goto(`https://twitter.com/explore/tabs/news_unified`);
+        await page.waitForTimeout(randomTime);
+        const newList = await page.$$('div[class="css-1dbjc4n"] div[data-testid="cellInnerDiv"] div[data-testid="trend"]');
+        if(newList.length>0){
+          let randomNew = Math.floor(Math.random() * newList.length);
+          await newList[randomNew].click();
+          await page.waitForTimeout(randomTime);
+          currentHeightX = 0;
+          previousHeightX = await page.evaluate(() => {
+            return document.documentElement.scrollHeight;
+          });
+        }
+      }else if(type==2){
+        await page.goto(`https://twitter.com/explore/tabs/trending`);
+        await page.waitForTimeout(randomTime);
+
+        const newList = await page.$$('div[class="css-1dbjc4n"] div[data-testid="cellInnerDiv"] div[data-testid="trend"]');
+        if(newList.length>0){
+          let randomNew = Math.floor(Math.random() * newList.length);
+          await newList[randomNew].click();
+          await page.waitForTimeout(randomTime);
+          currentHeightX = 0;
+          previousHeightX = await page.evaluate(() => {
+            return document.documentElement.scrollHeight;
+          });
+        }
+      }else if(type==3){
+        await page.goto(`https://twitter.com/explore/tabs/sports_unified`);
+        await page.waitForTimeout(randomTime);
+
+        const newList = await page.$$('div[class="css-1dbjc4n"] div[data-testid="cellInnerDiv"] div[data-testid="trend"]');
+        if(newList.length>0){
+          let randomNew = Math.floor(Math.random() * newList.length);
+          await newList[randomNew].click();
+          await page.waitForTimeout(randomTime);
+          currentHeightX = 0;
+          previousHeightX = await page.evaluate(() => {
+            return document.documentElement.scrollHeight;
+          });
+        }
+      }else if(type==4){
+        await page.goto(`https://twitter.com/explore/tabs/entertainment_unified`);
+        await page.waitForTimeout(randomTime);
+
+        const newList = await page.$$('div[class="css-1dbjc4n"] div[data-testid="cellInnerDiv"] div[data-testid="trend"]');
+        if(newList.length>0){
+          let randomNew = Math.floor(Math.random() * newList.length);
+          await newList[randomNew].click();
+          await page.waitForTimeout(randomTime);
+          currentHeightX = 0;
+          previousHeightX = await page.evaluate(() => {
+            return document.documentElement.scrollHeight;
+          });
+        }
+      }else{
+        await page.goto(`https://twitter.com/explore/tabs/for-you`);
+        await page.waitForTimeout(randomTime);
+
+        const newList = await page.$$('div[class="css-1dbjc4n"] div[data-testid="cellInnerDiv"] div[data-testid="trend"]');
+        if(newList.length>0){
+          let randomNew = Math.floor(Math.random() * newList.length);
+          await newList[randomNew].click();
+          await page.waitForTimeout(randomTime);
+          currentHeightX = 0;
+          previousHeightX = await page.evaluate(() => {
+            return document.documentElement.scrollHeight;
+          });
+        }
+      }
+
+      
+
+      
+      
+      
+
+      
+
+
+    }
+
+    await page.waitForTimeout(3000);
   }
+
 }
