@@ -539,18 +539,7 @@ const task = async(account) => {
           });
         }
       }
-
-      
-
-      
-      
-      
-
-      
-
-
     }
-
     await page.waitForTimeout(30000);
   }
 
