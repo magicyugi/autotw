@@ -19,6 +19,7 @@ const proxyKey = "019241a185dcd30a33327077b14a3415";//
 
 //like -- 点赞数量 -- 大于0的时候启动  可以搭配tag使用
 //keyword和comments -- 根据关键取数据，在特定帖子里面@人  -- 同时有数据任务才启动
+//
 // tag -- 根据tag查询推文 -- 根据推文点赞   %23 == #
 // const accounts = [
 //   {name:'newman_vic776',password:'Zr0gYS33', proxy: '', like:0, keyword : 'CoinbaseExch', tag:'claim', twitterAddress:'', comments:''},
@@ -38,7 +39,7 @@ connection.connect();
 
 (async () => {
   try {
-    connection.query("select * from  account where first=0 and (`like` >0 or keyword<>'' or followkeyword <>'') ", function(error, results, fields){
+    connection.query("select * from  account where first=0 and isgoing=1 and (`like` >0 or keyword<>'' or followkeyword <>'' or  (IFNULL(twitterAddress,'')<>'' and IFNULL(sendMessage,'')<>'')) LIMIT 10 ", function(error, results, fields){
       
       // const tweetText = await firstTweet.$eval('div[lang] ', el => el.textContent);
       // console.log(`Sticky tweet text: ${tweetText}`);
@@ -70,6 +71,12 @@ connection.connect();
 
 
 const task = async(account) => {
+
+
+  connection.query('update account set isgoing = 0  where name="'+account.name+'"', function(errorGo, resultsGo, fieldsGo){
+  });
+
+
 // for (const account of accounts) {
   // for(let i = 0;i<results.length;i++){
     // let account = results[i];
@@ -110,8 +117,17 @@ const task = async(account) => {
     //create a new branch for the new changes
     // fbe34d2406
     // await page.goto("https://www.whoer.net/");
+
+    // if(account.cookie){
+    //   // 解码 Base64 Cookie 并将 Cookie 设置到页面中
+    //   const decodedCookie = decodeBase64ToCookie(account.cookie);
+    //   console.log('cookies',decodedCookie.cookies);
+    //   // 将 Cookie 设置到页面中
+    //   await page.setCookie(decodedCookie.cookies);
+    // }
+
     await page.goto("https://twitter.com/home", { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(10000);
+    await page.waitForTimeout(5000);
 
     console.log('Login account name1',account.name);
     // 检查用户是否已登录
@@ -146,7 +162,9 @@ const task = async(account) => {
       }
     }
 
-
+    // // 等待登录完成后，获取 Cookie
+    // const cookies = await page.cookies();
+    // console.log('cookies',cookies);
     
     
 
@@ -229,131 +247,287 @@ const task = async(account) => {
         await page.waitForTimeout(time);
       }
     }
+    
 
     //@用户 帖子
     //关键查询->获取非认证的用户
-    if(account.keyword && account.twitterAddress){
+    if(account.twitterAddress ){
+      if(account.keyword){
+        let commenterNames = [];//@人
+        let count = 12 ;//数量
 
-      let commenterNames = [];//@人
-      let count = 12 ;//数量
+        // await page.goto('https://twitter.com/explore');
+        // await page.waitForTimeout(5000);
+        
+        // // // 点击进入“探索”页面
+        // // await page.waitForSelector('nav[data-testidaria-label="主要"] a[data-testid="AppTabBar_Explore_Link"]');
+        // // await page.click('nav[data-testid="primaryColumn"] a[data-testid="AppTabBar_Explore_Link"]');
+        // // await page.waitForNavigation();
 
-      // await page.goto('https://twitter.com/explore');
-      // await page.waitForTimeout(5000);
-      
-      // // // 点击进入“探索”页面
-      // // await page.waitForSelector('nav[data-testidaria-label="主要"] a[data-testid="AppTabBar_Explore_Link"]');
-      // // await page.click('nav[data-testid="primaryColumn"] a[data-testid="AppTabBar_Explore_Link"]');
-      // // await page.waitForNavigation();
+        // // 在“探索”页面输入关键字
+        // await page.waitForSelector('input[data-testid="SearchBox_Search_Input"]');
+        // // await page.type('input[data-testid="SearchBox_Search_Input"]', account.keyword, { delay: 100 });
+        // await page.waitForTimeout(3000);
+        // await page.keyboard.press('Enter');
+        // // await page.waitForNavigation();
 
-      // // 在“探索”页面输入关键字
-      // await page.waitForSelector('input[data-testid="SearchBox_Search_Input"]');
-      // // await page.type('input[data-testid="SearchBox_Search_Input"]', account.keyword, { delay: 100 });
-      // await page.waitForTimeout(3000);
-      // await page.keyboard.press('Enter');
-      // // await page.waitForNavigation();
+        await page.goto(`https://twitter.com/search?q=${account.keyword}&src=typed_query&f=user`);
 
-      await page.goto(`https://twitter.com/search?q=${account.keyword}&src=typed_query&f=user`);
+        // 等待页面加载完成
+        await page.waitForSelector('div[data-testid="UserCell"]');
 
-      // 等待页面加载完成
-      await page.waitForSelector('div[data-testid="UserCell"]');
+        // 查找第一个相关用户
+        const users = await page.$$('div[data-testid="UserCell"]');
+        const firstUser = users[0];
+        const username = await firstUser.$eval('div[class="css-901oao r-1awozwy r-18jsvk2 r-6koalj r-37j5jr r-a023e6 r-b88u0q r-rjixqe r-bcqeeo r-1udh08x r-3s2u2q r-qvutc0"] span[class="css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0"]', el => el.textContent);
+        console.log(`First user: ${username}`);
 
-      // 查找第一个相关用户
-      const users = await page.$$('div[data-testid="UserCell"]');
-      const firstUser = users[0];
-      const username = await firstUser.$eval('div[class="css-901oao r-1awozwy r-18jsvk2 r-6koalj r-37j5jr r-a023e6 r-b88u0q r-rjixqe r-bcqeeo r-1udh08x r-3s2u2q r-qvutc0"] span[class="css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0"]', el => el.textContent);
-      console.log(`First user: ${username}`);
+        // // 进入该用户的页面
+        await firstUser.click();
+        await page.waitForTimeout(5000);
 
-      // // 进入该用户的页面
-      await firstUser.click();
-      await page.waitForTimeout(5000);
-
-      await page.evaluate(() => {
-        window.scrollBy(0, window.innerHeight);
-      });
-
-      await page.waitForTimeout(3000);
-
-      // // 查找置顶帖
-      // 等待置顶推文加载完成
-      await page.waitForSelector('article[data-testid="tweet"]:nth-child(1)');
-
-      // 点击置顶推文，进入推文页面
-      // await page.click('article[data-testid="tweet"]:nth-child(1)');
-      // 使用 page.evaluate 方法点击置顶推文
-      await page.evaluate(() => {
-        const tweetElement = document.querySelector('article[data-testid="tweet"]:nth-child(1)');
-        if (tweetElement) {
-          tweetElement.click();
-        }
-      });
-
-      await page.waitForTimeout(3000);
-
-      
-
-      
-      // 向下滚动4次
-      for (let i = 0; i < 100&& count >0 ; i++) {
         await page.evaluate(() => {
           window.scrollBy(0, window.innerHeight);
         });
-        await page.waitForTimeout(2000); // 等待滚动加载内容
 
-        const comments = await page.$$('article[data-testid="tweet"]');
+        await page.waitForTimeout(3000);
 
-        console.log(`comments content: ${comments.length}`);
-        for (let j = 0; j < 50 && j < comments.length; j++) {
-          const comment = comments[j];
-          
-          // const isVerified = await comment.$('svg[aria-label="认证账号"]');
-          const isVerified = await comment.$('svg[aria-label="Verified account"]');
-          // console.log(`认证账号 : ${comments.length} ${isVerified}`);
-          if (isVerified) {
-            continue; // 跳过认证用户
+        // // 查找置顶帖
+        // 等待置顶推文加载完成
+        await page.waitForSelector('article[data-testid="tweet"]:nth-child(1)');
+
+        // 点击置顶推文，进入推文页面
+        // await page.click('article[data-testid="tweet"]:nth-child(1)');
+        // 使用 page.evaluate 方法点击置顶推文
+        await page.evaluate(() => {
+          const tweetElement = document.querySelector('article[data-testid="tweet"]:nth-child(1)');
+          if (tweetElement) {
+            tweetElement.click();
           }
-          const commenterName = await comment.$eval('div[class="css-1dbjc4n r-18u37iz r-1wbh5a2 r-13hce6t"] div[class="css-1dbjc4n r-1wbh5a2 r-dnmrzs"] span', el => el.textContent);
-          
-          if(!commenterNames.includes(commenterName)){
-            console.log(`评论人名称：${commenterName}`);
-            commenterNames.push(commenterName)
-            count--;
-          }
-        }
-      }
-
-      if(commenterNames.length > 0){
-        await page.goto(account.twitterAddress);
-    
-        // console.log(`tweetToReply ${tweetToReply.length}`);
-        await page.waitForSelector('div[aria-label="Reply"]');
-        // 点击回复按钮，打开回复框
-        await page.click('div[aria-label="Reply"]');
-
-        // 等待回复框加载完成
-        await page.waitForSelector('div[data-testid="tweetTextarea_0"]');
-        
-        // 使用逗号分隔符将数组转换为字符串
-        let commenterStr = commenterNames.join(' ');
-        console.log(`commenterStr ${account.comments}`);
-        let commenterAll = `${commenterStr +' ' + account.comments}`;
-
-        await page.type('div[data-testid="tweetTextarea_0"]', commenterAll);
-
-
-        // 提交回复
-        await page.click('div[data-testid="tweetButton"]');
-
-        let errorMessage = `[${new Date().toISOString()}] 回复任务 --- 用户:${account.name} \n 内容:${commenterAll}\n`;
-
-
-        connection.query('update account set `keyword` = "",twitterAddress = ""  where name="'+account.name+'"', function(error, results, fields){
-              
         });
 
-        // 将错误信息写入文件
-        fs.appendFileSync(filePath, errorMessage, 'utf8');
+        await page.waitForTimeout(3000);
+
         
+
+        
+        // 向下滚动4次
+        for (let i = 0; i < 100&& count >0 ; i++) {
+          await page.evaluate(() => {
+            window.scrollBy(0, window.innerHeight);
+          });
+          await page.waitForTimeout(2000); // 等待滚动加载内容
+
+          const comments = await page.$$('article[data-testid="tweet"]');
+
+          console.log(`comments content: ${comments.length}`);
+          for (let j = 0; j < 50 && j < comments.length; j++) {
+            const comment = comments[j];
+            
+            // const isVerified = await comment.$('svg[aria-label="认证账号"]');
+            const isVerified = await comment.$('svg[aria-label="Verified account"]');
+            // console.log(`认证账号 : ${comments.length} ${isVerified}`);
+            if (isVerified) {
+              continue; // 跳过认证用户
+            }
+            const commenterName = await comment.$eval('div[class="css-1dbjc4n r-18u37iz r-1wbh5a2 r-13hce6t"] div[class="css-1dbjc4n r-1wbh5a2 r-dnmrzs"] span', el => el.textContent);
+            
+            if(!commenterNames.includes(commenterName)){
+              console.log(`评论人名称：${commenterName}`);
+              commenterNames.push(commenterName)
+              count--;
+            }
+          }
+        }
+
+        if(commenterNames.length > 0){
+          await page.goto(account.twitterAddress);
+      
+          // console.log(`tweetToReply ${tweetToReply.length}`);
+          await page.waitForSelector('div[aria-label="Reply"]');
+          // 点击回复按钮，打开回复框
+          await page.click('div[aria-label="Reply"]');
+
+          // 等待回复框加载完成
+          await page.waitForSelector('div[data-testid="tweetTextarea_0"]');
+          
+          // 使用逗号分隔符将数组转换为字符串
+          let commenterStr = commenterNames.join(' ');
+          console.log(`commenterStr ${account.comments}`);
+          let commenterAll = `${commenterStr +' ' + account.comments}`;
+
+          await page.type('div[data-testid="tweetTextarea_0"]', commenterAll);
+
+
+          // 提交回复
+          await page.click('div[data-testid="tweetButton"]');
+
+          let errorMessage = `[${new Date().toISOString()}] 回复任务 --- 用户:${account.name} \n 内容:${commenterAll}\n`;
+
+
+         
+
+          // 将错误信息写入文件
+          fs.appendFileSync(filePath, errorMessage, 'utf8');
+          
+        }
+      } 
+      if(account.sendMessage){
+          console.log('sendMessage',account);
+          connection.query("select * from  sendLog where username='"+account.name+"'  and  twitterAddress ='"+account.twitterAddress+"' order by id  LIMIT 1 ",  async function(error, results, fields){
+          let senders = '';  
+          if(results.length == 0){
+            console.log('sendMessage',"INSERT INTO `sendLog` (`username`,`twitterAddress`) VALUE('"+account.name+"','"+account.twitterAddress+"')");
+            connection.query("INSERT INTO `sendLog` (`username`,`twitterAddress`) VALUE('"+account.name+"','"+account.twitterAddress+"')", function(error2, results2, fields2){
+              
+            });
+          }else{
+            senders = results[0].senders;
+          }
+
+          let sendArr = [];
+
+          if(senders){
+            sendArr = senders.split(',');
+          }
+
+          if(account.twitterAddress.includes("@")){
+            let urlAdd = account.twitterAddress.replace("@","");
+            console.log('followers url ',`https://twitter.com/${urlAdd}`);
+            await page.waitForTimeout(5000);
+            await page.goto('https://twitter.com/'+urlAdd);
+            
+            await page.waitForTimeout(5000);
+            console.log('followers url ',`https://twitter.com/${urlAdd}/followers`);
+            await page.goto(`https://twitter.com/${urlAdd}/followers`);
+
+            await page.waitForTimeout(5000);
+            // console.log('followers url ',`https://twitter.com/${urlAdd}/followers`);
+            let previousHeightF = await page.evaluate(() => {
+              return document.documentElement.scrollHeight;
+            });
+            let currentHeightF = 0;
+
+            let previousHeight = await page.evaluate(() => {
+              return document.documentElement.scrollHeight;
+            });
+
+
+            while (previousHeightF !== currentHeightF) {
+             
+
+              const folloUsers = await page.$$('div[aria-label="Timeline: Followers"] div[class="css-18t94o4 css-1dbjc4n r-1ny4l3l r-ymttw5 r-1f1sjgu r-o7ynqc r-6416eg"]');
+              console.log("folloUsers---",folloUsers.length);
+
+              if(folloUsers.length>0){
+                for (let i = 0; i < folloUsers.length ; i++) {
+                  // await page.waitForTimeout(100000);
+
+                  let sendNameY = await folloUsers[i].$eval('div[class="css-1dbjc4n r-1awozwy r-18u37iz r-1wbh5a2"] span', el => el.textContent);
+                  let sendNameN = sendNameY.replace('@','');
+                  console.log('ccc----'+i,sendNameN);
+
+                  let secondPage = await browser.newPage();
+
+                  await secondPage.goto('https://twitter.com/'+sendNameN);
+                  await secondPage.waitForTimeout(3000);
+                  // 检查是否有发送短信的按钮
+                  let messageButton = await secondPage.$('div[data-testid="sendDMFromProfile"]');
+
+                  await secondPage.evaluate(() => {
+                    window.scrollTo(0, document.documentElement.scrollHeight);
+                  });
+                  await secondPage.waitForTimeout(5000);
+                  // 检查是否有回复的按钮
+                  let replyButtons = await secondPage.$$('div[data-testid="reply"]');
+                  console.log("replyButtons----",replyButtons.length);
+                  await secondPage.waitForTimeout(10000);
+
+
+                  if (messageButton) {
+                    // 点击发送短信按钮
+                    await messageButton.click();
+                    await secondPage.waitForTimeout(10000);
+                    let closeButton = await secondPage.$('div[aria-label="Close"]');
+                    if(closeButton){
+                      await closeButton.click();
+                    }
+
+                    // 检查是否有发送短信的按钮
+                    let sendButton = await secondPage.$('aside[aria-label="Start a new message"] div[aria-label="Send"]');
+
+                    
+                    if (sendButton) {
+                      console.log('sending-----3');
+                      // 点击消息文本框，将焦点移到上面
+                      await secondPage.click('div[class="DraftEditor-root"]');
+                      await secondPage.keyboard.type(account.sendMessage, { delay: 100 });
+                      await sendButton.click();
+                      sendArr.push(sendNameN);
+                      let senderStr = sendArr.join(',');
+                      connection.query("update sendLog set `senders` = '"+senderStr+"'  where username='"+account.name+"'  and  twitterAddress ='"+account.twitterAddress+"'", function(errorSS, resultsSS, fieldsSS){
+                      });
+                    }
+                  
+
+                }else if(replyButtons.length>0){
+
+                  await replyButtons[0].click();
+
+                  await secondPage.waitForTimeout(10000);
+
+                  let tweetTextarea = await secondPage.$('div[data-testid="tweetTextarea_0"]');
+
+                  if(tweetTextarea){
+
+                      await secondPage.type('div[data-testid="tweetTextarea_0"]', account.sendMessage, { delay: 100 });
+
+                      // 提交回复
+                      await secondPage.click('div[data-testid="tweetButton"]');
+
+                      await secondPage.waitForTimeout(5000);
+
+                      sendArr.push(sendNameN);
+                      let senderStr = sendArr.join(',');
+
+                      connection.query("update sendLog set `senders` = '"+senderStr+"'  where username='"+account.name+"'  and  twitterAddress ='"+account.twitterAddress+"'", function(errorSS, resultsSS, fieldsSS){
+                      });
+                  }
+
+                 
+
+                }
+                await secondPage.waitForTimeout(10000);
+                await secondPage.close();
+
+                await page.waitForTimeout(10000);
+              }
+
+              }
+
+              await page.evaluate(() => {
+                window.scrollTo(0, document.documentElement.scrollHeight);
+              });
+          
+              await page.waitForTimeout(2000);
+          
+              previousHeightF = currentHeightF;
+              currentHeightF = await page.evaluate(() => {
+                return document.documentElement.scrollHeight;
+              });
+            }
+            
+          }
+          await page.waitForTimeout(2000);
+
+          connection.query('update account set twitterAddress = ""  where name="'+account.name+'"', function(errorO, resultsO, fieldsO){
+          });
+
+          await browser.close();
+        })
       }
+     
+
     }
 
     if(account.followkeyword){
@@ -438,7 +612,7 @@ const task = async(account) => {
     }
   //   await browser.close();
   // }
-
+  
 
   let currentHeightX = 0;
 
@@ -450,8 +624,8 @@ const task = async(account) => {
   // await page.evaluate(() => {
   //   return document.documentElement.scrollHeight;
   // });
-
-  while (true) {
+  let sxsx= false;
+  while (sxsx) {
     let randomTime= Math.floor(4000+Math.random()*2000);
     if(previousHeightX !== currentHeightX){
       await page.evaluate(() => {
@@ -543,4 +717,19 @@ const task = async(account) => {
     await page.waitForTimeout(30000);
   }
 
+  // Base64 编码
+  function encodeCookieToBase64(cookie) {
+    const jsonCookie = JSON.stringify(cookie);
+    return Buffer.from(jsonCookie).toString('base64');
+  }
+
+  // Base64 解码
+  function decodeBase64ToCookie(base64) {
+    const jsonCookie = Buffer.from(base64, 'base64').toString();
+    return JSON.parse(jsonCookie);
+  }
+
 }
+
+
+
